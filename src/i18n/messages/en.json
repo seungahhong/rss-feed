@@ -1,0 +1,90 @@
+{
+  "common": {
+    "appName": "RSS Feed AI Summary",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "search": "Search",
+    "noResults": "No results found"
+  },
+  "nav": {
+    "home": "Home",
+    "feeds": "Manage Feeds",
+    "search": "Search",
+    "settings": "Settings"
+  },
+  "feed": {
+    "addFeed": "Add Feed",
+    "feedUrl": "RSS Feed URL",
+    "feedName": "Feed Name",
+    "category": "Category",
+    "active": "Active",
+    "inactive": "Inactive",
+    "lastFetched": "Last Updated",
+    "deleteFeed": "Delete Feed",
+    "deleteConfirm": "Are you sure you want to delete this feed?",
+    "noFeeds": "No feeds registered",
+    "urlPlaceholder": "https://example.com/rss",
+    "namePlaceholder": "Enter feed name"
+  },
+  "article": {
+    "readOriginal": "Read Original",
+    "summarizedBy": "AI Summary",
+    "noArticles": "No summarized articles yet",
+    "publishedAt": "Published",
+    "allTopics": "All",
+    "allYears": "All"
+  },
+  "sidebar": {
+    "title": "AI Search",
+    "inputPlaceholder": "Ask about articles...",
+    "searching": "Searching...",
+    "searchError": "An error occurred while searching",
+    "placeholder": "Search articles within the current filter using AI",
+    "relatedArticles": "Related Articles"
+  },
+  "search": {
+    "placeholder": "Search summaries...",
+    "resultsFor": "Results for '{query}'",
+    "noResults": "No search results found"
+  },
+  "settings": {
+    "title": "Settings",
+    "polling": "Auto Polling",
+    "pollingEnabled": "Enable auto polling",
+    "pollingInterval": "Polling interval",
+    "pollingUnitHourly": "Hourly",
+    "pollingUnitDaily": "Daily",
+    "pollingUnitWeekly": "Weekly",
+    "pollingUnitMonthly": "Monthly",
+    "pollingEveryNHours": "Every {n} hours",
+    "pollingTime": "Time",
+    "pollingDayOfWeek": "Day",
+    "pollingDayOfMonth": "Day",
+    "pollingMon": "Monday",
+    "pollingTue": "Tuesday",
+    "pollingWed": "Wednesday",
+    "pollingThu": "Thursday",
+    "pollingFri": "Friday",
+    "pollingSat": "Saturday",
+    "pollingSun": "Sunday",
+    "pollingApply": "Apply",
+    "aiSettings": "AI Settings",
+    "ollamaUrl": "Ollama URL",
+    "model": "Model",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System"
+  },
+  "refresh": {
+    "button": "Refresh",
+    "refreshing": "Refreshing...",
+    "success": "Refresh complete",
+    "error": "Refresh failed"
+  }
+}

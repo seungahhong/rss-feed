@@ -1,0 +1,90 @@
+{
+  "common": {
+    "appName": "RSS Feed AI 요약",
+    "loading": "로딩 중...",
+    "error": "오류가 발생했습니다",
+    "save": "저장",
+    "cancel": "취소",
+    "delete": "삭제",
+    "confirm": "확인",
+    "search": "검색",
+    "noResults": "결과가 없습니다"
+  },
+  "nav": {
+    "home": "홈",
+    "feeds": "피드 관리",
+    "search": "검색",
+    "settings": "설정"
+  },
+  "feed": {
+    "addFeed": "피드 추가",
+    "feedUrl": "RSS 피드 URL",
+    "feedName": "피드 이름",
+    "category": "카테고리",
+    "active": "활성",
+    "inactive": "비활성",
+    "lastFetched": "마지막 업데이트",
+    "deleteFeed": "피드 삭제",
+    "deleteConfirm": "이 피드를 삭제하시겠습니까?",
+    "noFeeds": "등록된 피드가 없습니다",
+    "urlPlaceholder": "https://example.com/rss",
+    "namePlaceholder": "피드 이름을 입력하세요"
+  },
+  "article": {
+    "readOriginal": "원본 보기",
+    "summarizedBy": "AI 요약",
+    "noArticles": "아직 요약된 글이 없습니다",
+    "publishedAt": "게시일",
+    "allTopics": "전체",
+    "allYears": "전체"
+  },
+  "sidebar": {
+    "title": "AI 검색",
+    "inputPlaceholder": "아티클에 대해 질문하세요...",
+    "searching": "검색 중...",
+    "searchError": "검색 중 오류가 발생했습니다",
+    "placeholder": "현재 필터 범위 내 아티클을 AI로 검색할 수 있습니다",
+    "relatedArticles": "관련 아티클"
+  },
+  "search": {
+    "placeholder": "요약 내용을 검색하세요...",
+    "resultsFor": "'{query}' 검색 결과",
+    "noResults": "검색 결과가 없습니다"
+  },
+  "settings": {
+    "title": "설정",
+    "polling": "자동 폴링",
+    "pollingEnabled": "자동 폴링 활성화",
+    "pollingInterval": "폴링 주기",
+    "pollingUnitHourly": "매시간",
+    "pollingUnitDaily": "매일",
+    "pollingUnitWeekly": "매주",
+    "pollingUnitMonthly": "매월",
+    "pollingEveryNHours": "매 {n}시간",
+    "pollingTime": "시간",
+    "pollingDayOfWeek": "요일",
+    "pollingDayOfMonth": "일",
+    "pollingMon": "월요일",
+    "pollingTue": "화요일",
+    "pollingWed": "수요일",
+    "pollingThu": "목요일",
+    "pollingFri": "금요일",
+    "pollingSat": "토요일",
+    "pollingSun": "일요일",
+    "pollingApply": "적용",
+    "aiSettings": "AI 설정",
+    "ollamaUrl": "Ollama URL",
+    "model": "모델",
+    "language": "언어",
+    "theme": "테마",
+    "themeLight": "라이트",
+    "themeDark": "다크",
+    "themeSystem": "시스템"
+  },
+  "refresh": {
+    "button": "새로고침",
+    "refreshing": "새로고침 중...",
+    "success": "새로고침 완료",
+    "error": "새로고침 실패"
+  }
+}
