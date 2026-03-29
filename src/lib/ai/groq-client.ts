@@ -41,3 +41,41 @@ export async function groqChatCompletion(
 
   return response.choices[0]?.message?.content ?? '';
 }
+
+export async function translateSummary(
+  title: string,
+  description: string,
+  targetLang: 'ko' | 'en',
+): Promise<{ title: string; description: string }> {
+  const langName = targetLang === 'ko' ? 'Korean' : 'English';
+
+  let raw = '';
+  try {
+    raw = await groqChatCompletion(
+      [
+        {
+          role: 'system',
+          content: `Translate the following article summary to ${langName}. Return ONLY valid JSON: {"title": "...", "description": "..."}`,
+        },
+        { role: 'user', content: JSON.stringify({ title, description }) },
+      ],
+      { temperature: 0.3, maxTokens: 1024 },
+    );
+
+    const parsed = JSON.parse(raw);
+    if (parsed.title && parsed.description) return parsed;
+  } catch {
+    // Try extracting JSON from raw response
+    try {
+      const match = raw.match(/\{[\s\S]*"title"[\s\S]*"description"[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed.title && parsed.description) return parsed;
+      }
+    } catch {
+      // Fall through
+    }
+  }
+
+  return { title, description };
+}

@@ -36,7 +36,10 @@
     "noArticles": "No summarized articles yet",
     "publishedAt": "Published",
     "allTopics": "All",
-    "allYears": "All"
+    "summaryTab": "Summary",
+    "summaryDesc": "AI summaries from last 30 days",
+    "backToHome": "Back to Home",
+    "source": "Source"
   },
   "sidebar": {
     "title": "AI Search",

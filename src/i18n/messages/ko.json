@@ -36,7 +36,10 @@
     "noArticles": "아직 요약된 글이 없습니다",
     "publishedAt": "게시일",
     "allTopics": "전체",
-    "allYears": "전체"
+    "summaryTab": "요약",
+    "summaryDesc": "최근 30일 AI 요약",
+    "backToHome": "홈으로",
+    "source": "출처"
   },
   "sidebar": {
     "title": "AI 검색",

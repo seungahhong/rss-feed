@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { YearTabs } from './YearTabs';
 import { TopicFilter } from './TopicFilter';
 import { ArticleList } from './ArticleList';
+import { SummaryList } from './SummaryList';
 import { AiSearchSidebar } from '@/components/sidebar/AiSearchSidebar';
 import type { Topic } from '@/types';
 
@@ -19,6 +20,8 @@ export function HomeContent() {
   const [years, setYears] = useState<number[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const view = searchParams.get('view');
+  const showSummary = view === 'summary' || (!view && !searchParams.get('year'));
   const selectedTopic = searchParams.get('topic') || null;
   const selectedYear = searchParams.get('year') ? parseInt(searchParams.get('year')!, 10) : null;
 
@@ -32,7 +35,6 @@ export function HomeContent() {
           params.set(key, value);
         }
       }
-      // Reset page when filters change
       params.delete('page');
       const qs = params.toString();
       router.push(qs ? `${pathname}?${qs}` : pathname);
@@ -48,11 +50,15 @@ export function HomeContent() {
   );
 
   const handleYearChange = useCallback(
-    (year: number | null) => {
-      updateParams({ year: year ? String(year) : null });
+    (year: number) => {
+      updateParams({ year: String(year), view: null });
     },
     [updateParams],
   );
+
+  const handleSummarySelect = useCallback(() => {
+    updateParams({ view: 'summary', year: null, topic: null });
+  }, [updateParams]);
 
   // Fetch topics and years
   useEffect(() => {
@@ -96,23 +102,28 @@ export function HomeContent() {
           </button>
         </div>
 
-        {years.length > 0 && (
-          <YearTabs
-            years={years}
-            selectedYear={selectedYear}
-            onYearChange={handleYearChange}
-          />
-        )}
+        <YearTabs
+          years={years}
+          selectedYear={selectedYear}
+          showSummary={showSummary}
+          onYearChange={handleYearChange}
+          onSummarySelect={handleSummarySelect}
+        />
 
-        {topics.length > 0 && (
-          <TopicFilter
-            topics={topics}
-            selectedTopic={selectedTopic}
-            onTopicChange={handleTopicChange}
-          />
+        {showSummary ? (
+          <SummaryList />
+        ) : (
+          <>
+            {topics.length > 0 && (
+              <TopicFilter
+                topics={topics}
+                selectedTopic={selectedTopic}
+                onTopicChange={handleTopicChange}
+              />
+            )}
+            <ArticleList topic={selectedTopic} year={selectedYear} />
+          </>
         )}
-
-        <ArticleList topic={selectedTopic} year={selectedYear} />
       </div>
 
       {/* Sidebar - always rendered on lg+, toggled on mobile */}

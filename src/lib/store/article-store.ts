@@ -156,6 +156,16 @@ export class ArticleStore {
     return rows.map((r) => r.year as number);
   }
 
+  async getRecentArticles(days: number, limit: number): Promise<Article[]> {
+    const { rows } = await sql`
+      SELECT * FROM articles
+      WHERE published_at >= NOW() - INTERVAL '1 day' * ${days}
+      ORDER BY published_at DESC
+      LIMIT ${limit}
+    `;
+    return rows.map(rowToArticle);
+  }
+
   async getPageByTopicAndYear(
     page: number,
     limit: number,
