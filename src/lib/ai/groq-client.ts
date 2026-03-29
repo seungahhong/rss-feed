@@ -42,6 +42,48 @@ export async function groqChatCompletion(
   return response.choices[0]?.message?.content ?? '';
 }
 
+export async function groqSummarize(
+  title: string,
+  content: string,
+  targetLang: 'ko' | 'en',
+): Promise<{ title: string; description: string }> {
+  const langName = targetLang === 'ko' ? 'Korean' : 'English';
+
+  let raw = '';
+  try {
+    raw = await groqChatCompletion(
+      [
+        {
+          role: 'system',
+          content: `You are an article summarizer. Given the title and full content of an article, produce a concise summary in ${langName}.
+Return ONLY valid JSON: {"title": "summarized title in ${langName}", "description": "3-5 sentence summary in ${langName}"}
+Focus on the key points and main takeaways. Do NOT include any text outside the JSON.`,
+        },
+        {
+          role: 'user',
+          content: `Title: ${title}\n\nContent:\n${content.slice(0, 6000)}`,
+        },
+      ],
+      { temperature: 0.3, maxTokens: 1024 },
+    );
+
+    const parsed = JSON.parse(raw);
+    if (parsed.title && parsed.description) return parsed;
+  } catch {
+    try {
+      const match = raw.match(/\{[\s\S]*"title"[\s\S]*"description"[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed.title && parsed.description) return parsed;
+      }
+    } catch {
+      // Fall through
+    }
+  }
+
+  return { title, description: content.slice(0, 300) };
+}
+
 export async function translateSummary(
   title: string,
   description: string,

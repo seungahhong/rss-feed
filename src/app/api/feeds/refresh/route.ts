@@ -5,7 +5,8 @@ import { diffArticles, filterBySnapshot } from '@/lib/rss/differ';
 import { summarizeArticle } from '@/lib/ai/summarizer';
 import { SummaryQueue } from '@/lib/ai/queue';
 import { classifyArticleTopics } from '@/lib/ai/topic-classifier';
-import { isGroqAvailable } from '@/lib/ai/groq-client';
+import { isGroqAvailable, groqSummarize } from '@/lib/ai/groq-client';
+import { fetchArticleContent } from '@/lib/rss/content-fetcher';
 import type { SupportedLocale } from '@/types';
 
 const summaryQueue = new SummaryQueue();
@@ -94,7 +95,7 @@ export async function POST() {
         });
 
         summaryQueue.enqueue(() =>
-          summarizeAndStore(article.id, newItem.title, newItem.contentSnippet, settings.locale, settings.ai.ollamaUrl, settings.ai.model),
+          fetchAndSummarize(article.id, newItem.title, newItem.link, newItem.contentSnippet, settings.locale, settings.ai.ollamaUrl, settings.ai.model),
         );
       }
 
@@ -108,7 +109,7 @@ export async function POST() {
 
         await summaryStore.deleteByArticleId(updated.existingId);
         summaryQueue.enqueue(() =>
-          summarizeAndStore(updated.existingId, updated.item.title, updated.item.contentSnippet, settings.locale, settings.ai.ollamaUrl, settings.ai.model),
+          fetchAndSummarize(updated.existingId, updated.item.title, updated.item.link, updated.item.contentSnippet, settings.locale, settings.ai.ollamaUrl, settings.ai.model),
         );
       }
 
@@ -141,15 +142,38 @@ export async function POST() {
   return NextResponse.json({ data: results });
 }
 
-async function summarizeAndStore(
+async function fetchAndSummarize(
   articleId: string,
   title: string,
-  content: string,
+  link: string,
+  fallbackContent: string,
   locale: SupportedLocale,
   ollamaUrl: string,
   model: string,
 ): Promise<void> {
   try {
+    // 1. Fetch actual page content
+    const pageContent = await fetchArticleContent(link);
+    const content = pageContent || fallbackContent;
+
+    // 2. Try GROQ summarization first (uses fetched full content)
+    if (isGroqAvailable() && content.length > 100) {
+      try {
+        const result = await groqSummarize(title, content, locale);
+        await summaryStore.add({
+          articleId,
+          lang: locale,
+          title: result.title,
+          description: result.description,
+          model: 'groq',
+        });
+        return;
+      } catch (error) {
+        console.warn(`GROQ summarize failed for ${articleId}, falling back to Ollama:`, error);
+      }
+    }
+
+    // 3. Fallback to Ollama
     const result = await summarizeArticle(title, content, locale, ollamaUrl, model);
     await summaryStore.add({
       articleId,
