@@ -17,8 +17,8 @@ interface AiSearchSidebarProps {
 }
 
 interface SearchResult {
-  answer: string;
-  relatedArticles: ArticleWithSummary[];
+  dbArticles: ArticleWithSummary[];
+  webAnswer: string;
 }
 
 export function AiSearchSidebar({ topic, year, isOpen, onClose }: AiSearchSidebarProps) {
@@ -134,10 +134,31 @@ export function AiSearchSidebar({ topic, year, isOpen, onClose }: AiSearchSideba
 
           {result && !loading && (
             <div className="space-y-4">
-              <AiAnswer answer={result.answer} />
-              {result.relatedArticles.length > 0 && (
-                <RelatedArticles articles={result.relatedArticles} />
+              {/* DB search results first */}
+              {result.dbArticles.length > 0 && (
+                <div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">
+                    {t('dbResults')}
+                  </h3>
+                  <RelatedArticles articles={result.dbArticles} />
+                </div>
               )}
+              {result.dbArticles.length === 0 && (
+                <div className="rounded-md bg-surface-hover p-3 text-sm text-muted">
+                  {t('noDbResults')}
+                </div>
+              )}
+
+              {/* Divider */}
+              <div className="border-t border-border" />
+
+              {/* Web search results */}
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">
+                  {t('webResults')}
+                </h3>
+                <AiAnswer answer={result.webAnswer} />
+              </div>
             </div>
           )}
 

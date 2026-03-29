@@ -47,7 +47,10 @@
     "searching": "검색 중...",
     "searchError": "검색 중 오류가 발생했습니다",
     "placeholder": "현재 필터 범위 내 아티클을 AI로 검색할 수 있습니다",
-    "relatedArticles": "관련 아티클"
+    "relatedArticles": "관련 아티클",
+    "dbResults": "DB 검색 결과",
+    "noDbResults": "DB에서 일치하는 아티클이 없습니다",
+    "webResults": "웹 검색 결과"
   },
   "search": {
     "placeholder": "요약 내용을 검색하세요...",

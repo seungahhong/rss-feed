@@ -47,7 +47,10 @@
     "searching": "Searching...",
     "searchError": "An error occurred while searching",
     "placeholder": "Search articles within the current filter using AI",
-    "relatedArticles": "Related Articles"
+    "relatedArticles": "Related Articles",
+    "dbResults": "Articles in Database",
+    "noDbResults": "No matching articles found in database",
+    "webResults": "Web Search Results"
   },
   "search": {
     "placeholder": "Search summaries...",
