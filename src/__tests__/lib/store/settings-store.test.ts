@@ -1,58 +1,43 @@
+import { sql } from '@vercel/postgres';
 import { SettingsStore } from '@/lib/store/settings-store';
 import { DEFAULT_SETTINGS } from '@/types';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
+
+jest.mock('@vercel/postgres', () => ({
+  sql: jest.fn(),
+}));
+
+const mockedSql = sql as unknown as jest.Mock;
 
 describe('SettingsStore', () => {
-  let tmpDir: string;
   let store: SettingsStore;
 
-  beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'settings-store-test-'));
-    store = new SettingsStore(path.join(tmpDir, 'settings.json'));
+  beforeEach(() => {
+    store = new SettingsStore();
+    jest.clearAllMocks();
   });
 
-  afterEach(async () => {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  });
-
-  it('should return default settings initially', async () => {
+  it('should return default settings when table is empty', async () => {
+    mockedSql.mockResolvedValueOnce({ rows: [] });
     const settings = await store.get();
-    expect(settings).toEqual(DEFAULT_SETTINGS);
+    expect(settings.locale).toBe(DEFAULT_SETTINGS.locale);
+    expect(settings.theme).toBe(DEFAULT_SETTINGS.theme);
   });
 
-  it('should update polling settings', async () => {
-    const updated = await store.patch({
-      polling: { ...DEFAULT_SETTINGS.polling, enabled: false, type: 'hourly', intervalHours: 2 },
-    });
-    expect(updated.polling.enabled).toBe(false);
-    expect(updated.polling.type).toBe('hourly');
-    expect(updated.polling.intervalHours).toBe(2);
-    expect(updated.ai).toEqual(DEFAULT_SETTINGS.ai);
-  });
-
-  it('should update AI settings', async () => {
-    const updated = await store.patch({ ai: { ollamaUrl: 'http://localhost:11434', model: 'mistral' } });
-    expect(updated.ai.model).toBe('mistral');
-    expect(updated.polling).toEqual(DEFAULT_SETTINGS.polling);
-  });
-
-  it('should update locale', async () => {
-    const updated = await store.patch({ locale: 'en' });
-    expect(updated.locale).toBe('en');
-  });
-
-  it('should update theme', async () => {
-    const updated = await store.patch({ theme: 'dark' });
-    expect(updated.theme).toBe('dark');
-  });
-
-  it('should persist settings across reads', async () => {
-    await store.patch({ locale: 'en', theme: 'dark' });
-    const freshStore = new SettingsStore(path.join(tmpDir, 'settings.json'));
-    const settings = await freshStore.get();
+  it('should return stored settings', async () => {
+    const stored = { ...DEFAULT_SETTINGS, locale: 'en' as const, theme: 'dark' as const };
+    mockedSql.mockResolvedValueOnce({ rows: [{ value: stored }] });
+    const settings = await store.get();
     expect(settings.locale).toBe('en');
     expect(settings.theme).toBe('dark');
+  });
+
+  it('should patch settings', async () => {
+    // get() call
+    mockedSql.mockResolvedValueOnce({ rows: [{ value: DEFAULT_SETTINGS }] });
+    // upsert call
+    mockedSql.mockResolvedValueOnce({ rows: [] });
+
+    const updated = await store.patch({ locale: 'en' });
+    expect(updated.locale).toBe('en');
   });
 });

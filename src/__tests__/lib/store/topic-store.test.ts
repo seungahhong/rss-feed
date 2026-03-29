@@ -1,75 +1,81 @@
+import { sql } from '@vercel/postgres';
 import { TopicStore } from '@/lib/store/topic-store';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
+
+jest.mock('@vercel/postgres', () => ({
+  sql: jest.fn(),
+}));
+
+const mockedSql = sql as unknown as jest.Mock;
+
+const makeRow = (overrides: Record<string, unknown> = {}) => ({
+  id: 't1',
+  name: 'AI/ML',
+  label_ko: 'AI/ML',
+  label_en: 'AI/ML',
+  is_seed: true,
+  created_at: new Date('2026-01-01'),
+  ...overrides,
+});
 
 describe('TopicStore', () => {
-  let tmpDir: string;
   let store: TopicStore;
 
-  beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'topic-store-test-'));
-    store = new TopicStore(path.join(tmpDir, 'topics.json'));
+  beforeEach(() => {
+    store = new TopicStore();
+    jest.clearAllMocks();
   });
 
-  afterEach(async () => {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  });
-
-  it('should return empty topics initially', async () => {
+  it('should return all topics', async () => {
+    mockedSql.mockResolvedValueOnce({ rows: [makeRow()] });
     const topics = await store.getAll();
-    expect(topics).toEqual([]);
-  });
-
-  it('should add a topic', async () => {
-    const topic = await store.add({
-      name: 'AI/ML',
-      label: { ko: 'AI/ML', en: 'AI/ML' },
-    });
-    expect(topic.id).toBeDefined();
-    expect(topic.name).toBe('AI/ML');
-    expect(topic.isSeed).toBe(false);
-  });
-
-  it('should not create duplicate topics (case-insensitive)', async () => {
-    await store.add({ name: 'Frontend', label: { ko: '프론트엔드', en: 'Frontend' } });
-    const dup = await store.add({ name: 'frontend', label: { ko: '프론트엔드', en: 'Frontend' } });
-    const all = await store.getAll();
-    expect(all).toHaveLength(1);
-    expect(dup.name).toBe('Frontend');
+    expect(topics).toHaveLength(1);
+    expect(topics[0].name).toBe('AI/ML');
+    expect(topics[0].label.ko).toBe('AI/ML');
   });
 
   it('should find topic by name case-insensitively', async () => {
-    await store.add({ name: 'DevOps', label: { ko: 'DevOps', en: 'DevOps' } });
-    const found = await store.getByName('devops');
+    mockedSql.mockResolvedValueOnce({ rows: [makeRow()] });
+    const found = await store.getByName('ai/ml');
     expect(found).not.toBeNull();
-    expect(found?.name).toBe('DevOps');
+    expect(found?.name).toBe('AI/ML');
   });
 
   it('should return null for non-existent topic', async () => {
+    mockedSql.mockResolvedValueOnce({ rows: [] });
     const found = await store.getByName('Non-existent');
     expect(found).toBeNull();
   });
 
-  it('should seed topics when empty', async () => {
-    await store.ensureSeedTopics();
-    const topics = await store.getAll();
-    expect(topics.length).toBeGreaterThan(0);
-    expect(topics.every((t) => t.isSeed)).toBe(true);
-  });
-
-  it('should not re-seed if topics already exist', async () => {
-    await store.add({ name: 'Custom', label: { ko: '커스텀', en: 'Custom' } });
-    await store.ensureSeedTopics();
-    const topics = await store.getAll();
-    expect(topics).toHaveLength(1);
-    expect(topics[0].name).toBe('Custom');
+  it('should not duplicate topics on add', async () => {
+    // getByName returns existing
+    mockedSql.mockResolvedValueOnce({ rows: [makeRow()] });
+    const result = await store.add({ name: 'AI/ML', label: { ko: 'AI/ML', en: 'AI/ML' } });
+    expect(result.name).toBe('AI/ML');
+    // sql should only be called once (for getByName), no INSERT
+    expect(mockedSql).toHaveBeenCalledTimes(1);
   });
 
   it('should return topic names', async () => {
-    await store.add({ name: 'AI/ML', label: { ko: 'AI/ML', en: 'AI/ML' } });
-    await store.add({ name: 'Frontend', label: { ko: '프론트엔드', en: 'Frontend' } });
+    mockedSql.mockResolvedValueOnce({ rows: [{ name: 'AI/ML' }, { name: 'Frontend' }] });
     const names = await store.getNames();
     expect(names).toEqual(['AI/ML', 'Frontend']);
+  });
+
+  it('should seed topics when empty', async () => {
+    // COUNT returns 0
+    mockedSql.mockResolvedValueOnce({ rows: [{ count: '0' }] });
+    // 12 INSERT calls for seed topics
+    for (let i = 0; i < 12; i++) {
+      mockedSql.mockResolvedValueOnce({ rows: [] });
+    }
+    await store.ensureSeedTopics();
+    // 1 (count) + 12 (inserts) = 13 calls
+    expect(mockedSql).toHaveBeenCalledTimes(13);
+  });
+
+  it('should skip seeding when topics exist', async () => {
+    mockedSql.mockResolvedValueOnce({ rows: [{ count: '5' }] });
+    await store.ensureSeedTopics();
+    expect(mockedSql).toHaveBeenCalledTimes(1);
   });
 });

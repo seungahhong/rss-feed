@@ -1,6 +1,6 @@
+import { sql } from '@vercel/postgres';
 import { nanoid } from 'nanoid';
-import { BaseStore } from './base-store';
-import type { Topic, TopicsData } from '@/types';
+import type { Topic } from '@/types';
 
 interface AddTopicInput {
   name: string;
@@ -27,58 +27,71 @@ function normalizeName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+function rowToTopic(row: Record<string, unknown>): Topic {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    label: {
+      ko: row.label_ko as string,
+      en: row.label_en as string,
+    },
+    isSeed: row.is_seed as boolean,
+    createdAt: (row.created_at as Date).toISOString(),
+  };
+}
+
 export class TopicStore {
-  private store: BaseStore<TopicsData>;
-
-  constructor(filePath: string) {
-    this.store = new BaseStore<TopicsData>(filePath, { topics: [] });
-  }
-
   async getAll(): Promise<Topic[]> {
-    const data = await this.store.read();
-    return data.topics;
+    const { rows } = await sql`SELECT * FROM topics ORDER BY is_seed DESC, name ASC`;
+    return rows.map(rowToTopic);
   }
 
   async getByName(name: string): Promise<Topic | null> {
-    const data = await this.store.read();
     const normalized = normalizeName(name);
-    return data.topics.find((t) => normalizeName(t.name) === normalized) ?? null;
+    const { rows } = await sql`SELECT * FROM topics WHERE LOWER(TRIM(name)) = ${normalized} LIMIT 1`;
+    return rows.length > 0 ? rowToTopic(rows[0]) : null;
   }
 
   async add(input: AddTopicInput): Promise<Topic> {
     const existing = await this.getByName(input.name);
     if (existing) return existing;
 
-    const topic: Topic = {
-      id: nanoid(),
-      name: input.name,
-      label: input.label,
-      isSeed: input.isSeed ?? false,
-      createdAt: new Date().toISOString(),
-    };
-    await this.store.update((data) => {
-      data.topics.push(topic);
-      return data;
-    });
-    return topic;
+    const id = nanoid();
+    const now = new Date().toISOString();
+    const isSeed = input.isSeed ?? false;
+
+    const { rows } = await sql`
+      INSERT INTO topics (id, name, label_ko, label_en, is_seed, created_at)
+      VALUES (${id}, ${input.name}, ${input.label.ko}, ${input.label.en}, ${isSeed}, ${now})
+      ON CONFLICT (name) DO NOTHING
+      RETURNING *
+    `;
+
+    if (rows.length > 0) return rowToTopic(rows[0]);
+
+    // If ON CONFLICT hit, return existing
+    const found = await this.getByName(input.name);
+    return found!;
   }
 
   async ensureSeedTopics(): Promise<void> {
-    const data = await this.store.read();
-    if (data.topics.length > 0) return;
+    const { rows } = await sql`SELECT COUNT(*) as count FROM topics`;
+    const count = parseInt(rows[0].count as string, 10);
+    if (count > 0) return;
 
-    const topics: Topic[] = SEED_TOPICS.map((input) => ({
-      id: nanoid(),
-      name: input.name,
-      label: input.label,
-      isSeed: true,
-      createdAt: new Date().toISOString(),
-    }));
-    await this.store.write({ topics });
+    for (const input of SEED_TOPICS) {
+      const id = nanoid();
+      const now = new Date().toISOString();
+      await sql`
+        INSERT INTO topics (id, name, label_ko, label_en, is_seed, created_at)
+        VALUES (${id}, ${input.name}, ${input.label.ko}, ${input.label.en}, true, ${now})
+        ON CONFLICT (name) DO NOTHING
+      `;
+    }
   }
 
   async getNames(): Promise<string[]> {
-    const data = await this.store.read();
-    return data.topics.map((t) => t.name);
+    const { rows } = await sql`SELECT name FROM topics ORDER BY name`;
+    return rows.map((r) => r.name as string);
   }
 }

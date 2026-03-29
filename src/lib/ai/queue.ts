@@ -1,18 +1,34 @@
-import { Mutex } from 'async-mutex';
-
 export class SummaryQueue {
-  private mutex = new Mutex();
-  private waiting = 0;
+  private running = false;
+  private queue: Array<() => Promise<unknown>> = [];
 
   get size(): number {
-    return this.waiting;
+    return this.queue.length;
   }
 
   async enqueue<T>(task: () => Promise<T>): Promise<T> {
-    this.waiting++;
-    return this.mutex.runExclusive(async () => {
-      this.waiting--;
-      return task();
+    return new Promise<T>((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const result = await task();
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      });
+      this.processNext();
     });
+  }
+
+  private async processNext(): Promise<void> {
+    if (this.running || this.queue.length === 0) return;
+    this.running = true;
+    const task = this.queue.shift()!;
+    try {
+      await task();
+    } finally {
+      this.running = false;
+      this.processNext();
+    }
   }
 }

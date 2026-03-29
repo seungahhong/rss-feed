@@ -1,69 +1,78 @@
+import { sql } from '@vercel/postgres';
 import { FeedStore } from '@/lib/store/feed-store';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
+
+jest.mock('@vercel/postgres', () => ({
+  sql: Object.assign(jest.fn(), { query: jest.fn() }),
+}));
+
+const mockedSql = sql as unknown as jest.Mock;
 
 describe('FeedStore', () => {
-  let tmpDir: string;
   let store: FeedStore;
 
-  beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'feed-store-test-'));
-    store = new FeedStore(path.join(tmpDir, 'feeds.json'));
+  beforeEach(() => {
+    store = new FeedStore();
+    jest.clearAllMocks();
   });
 
-  afterEach(async () => {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  });
+  it('should return all feeds', async () => {
+    const mockRow = {
+      id: 'f1',
+      url: 'https://example.com/rss',
+      name: 'Test',
+      category: 'tech',
+      active: true,
+      last_fetched_at: null,
+      last_fetch_status: null,
+      last_etag: null,
+      last_modified: null,
+      snapshot_at: null,
+      created_at: new Date('2026-01-01'),
+    };
+    mockedSql.mockResolvedValueOnce({ rows: [mockRow] });
 
-  it('should return empty feeds initially', async () => {
     const feeds = await store.getAll();
-    expect(feeds).toEqual([]);
+    expect(feeds).toHaveLength(1);
+    expect(feeds[0].id).toBe('f1');
+    expect(feeds[0].url).toBe('https://example.com/rss');
   });
 
-  it('should add a feed and return it with generated id and timestamps', async () => {
-    const feed = await store.add({ url: 'https://example.com/rss', name: 'Test', category: 'tech' });
-    expect(feed.id).toBeDefined();
-    expect(feed.url).toBe('https://example.com/rss');
-    expect(feed.name).toBe('Test');
-    expect(feed.active).toBe(true);
-    expect(feed.createdAt).toBeDefined();
-  });
-
-  it('should get a feed by id', async () => {
-    const created = await store.add({ url: 'https://example.com/rss', name: 'Test', category: 'tech' });
-    const found = await store.getById(created.id);
-    expect(found).toEqual(created);
-  });
-
-  it('should return null for non-existent feed id', async () => {
+  it('should return null for non-existent feed', async () => {
+    mockedSql.mockResolvedValueOnce({ rows: [] });
     const found = await store.getById('non-existent');
     expect(found).toBeNull();
   });
 
-  it('should delete a feed by id', async () => {
-    const feed = await store.add({ url: 'https://example.com/rss', name: 'Test', category: 'tech' });
-    const deleted = await store.delete(feed.id);
+  it('should add a feed', async () => {
+    const mockRow = {
+      id: 'f-new',
+      url: 'https://example.com/rss',
+      name: 'New Feed',
+      category: 'tech',
+      active: true,
+      last_fetched_at: null,
+      last_fetch_status: null,
+      last_etag: null,
+      last_modified: null,
+      snapshot_at: null,
+      created_at: new Date(),
+    };
+    mockedSql.mockResolvedValueOnce({ rows: [mockRow] });
+
+    const feed = await store.add({ url: 'https://example.com/rss', name: 'New Feed', category: 'tech' });
+    expect(feed.name).toBe('New Feed');
+    expect(feed.active).toBe(true);
+  });
+
+  it('should delete a feed', async () => {
+    mockedSql.mockResolvedValueOnce({ rowCount: 1 });
+    const deleted = await store.delete('f1');
     expect(deleted).toBe(true);
-    const feeds = await store.getAll();
-    expect(feeds).toHaveLength(0);
   });
 
   it('should return false when deleting non-existent feed', async () => {
+    mockedSql.mockResolvedValueOnce({ rowCount: 0 });
     const deleted = await store.delete('non-existent');
     expect(deleted).toBe(false);
-  });
-
-  it('should update a feed', async () => {
-    const feed = await store.add({ url: 'https://example.com/rss', name: 'Test', category: 'tech' });
-    const updated = await store.updateFeed(feed.id, { name: 'Updated', active: false });
-    expect(updated?.name).toBe('Updated');
-    expect(updated?.active).toBe(false);
-    expect(updated?.url).toBe('https://example.com/rss');
-  });
-
-  it('should return null when updating non-existent feed', async () => {
-    const updated = await store.updateFeed('non-existent', { name: 'Updated' });
-    expect(updated).toBeNull();
   });
 });

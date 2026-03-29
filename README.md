@@ -23,7 +23,7 @@ AI 기반 RSS 피드 요약 블로그. Ollama(llama3)를 활용하여 RSS 피드
 - **Theme**: next-themes
 - **AI 요약**: Ollama (llama3 8B)
 - **AI 분류/검색**: GROQ API (llama-3.3-70b-versatile)
-- **저장소**: JSON 파일 기반 (atomic write + async-mutex)
+- **저장소**: Vercel Postgres (@vercel/postgres)
 - **테스트**: Jest, ts-jest
 - **린트**: ESLint, Prettier, Stylelint
 
@@ -33,6 +33,7 @@ AI 기반 RSS 피드 요약 블로그. Ollama(llama3)를 활용하여 RSS 피드
 
 - Node.js 20+
 - pnpm 10+
+- Vercel Postgres 데이터베이스 (Vercel 대시보드에서 생성)
 - Ollama (로컬 실행 시)
 - GROQ API Key (주제 분류/AI 검색 사용 시, 선택사항)
 
@@ -45,6 +46,9 @@ cp .env.example .env.local
 `.env.local` 파일을 편집하여 필요한 값을 설정합니다:
 
 ```env
+# Vercel Postgres (필수)
+POSTGRES_URL=postgres://...
+
 # GROQ API Key (선택사항 - 없으면 주제 분류/AI 검색 비활성화)
 GROQ_API_KEY=gsk_your_api_key_here
 
@@ -52,7 +56,19 @@ GROQ_API_KEY=gsk_your_api_key_here
 OLLAMA_BASE_URL=http://localhost:11434
 ```
 
-> GROQ API 키는 https://console.groq.com/keys 에서 무료로 발급받을 수 있습니다.
+> - Vercel Postgres는 Vercel 대시보드 > Storage에서 생성 후 환경변수가 자동 연결됩니다.
+> - GROQ API 키는 https://console.groq.com/keys 에서 무료로 발급받을 수 있습니다.
+
+### DB 초기화
+
+최초 배포 후 또는 로컬 실행 전에 DB 스키마를 초기화해야 합니다:
+
+```bash
+# 서버 실행 후
+curl -X POST http://localhost:3000/api/db/init
+```
+
+또는 Vercel 배포 후 `https://your-app.vercel.app/api/db/init` 에 POST 요청을 보내세요.
 
 ### 로컬 실행
 
@@ -115,7 +131,8 @@ src/
 │   ├── settings/           # SettingsForm
 │   └── ui/                 # ThemeToggle, LocaleSwitcher, RefreshButton
 ├── lib/
-│   ├── store/              # JSON 파일 저장소 (atomic write)
+│   ├── db/                 # DB 스키마 정의 (Vercel Postgres)
+│   ├── store/              # 데이터 접근 계층 (Vercel Postgres 기반)
 │   │   ├── article-store   # 아티클 CRUD + 주제/연도 필터링
 │   │   ├── topic-store     # 주제 카테고리 관리 (시드 + AI 생성)
 │   │   ├── feed-store      # 피드 CRUD + snapshot 관리
